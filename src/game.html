@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatApp</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #548687;
+        text-align: center;
+        font-family: "Roboto", sans-serif;
+      }
+
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      .game-container,
+      .chat-container {
+        flex: 1;
+        max-width: 45%;
+      }
+
+      .game-container {
+        margin-left: 20px;
+      }
+
+      .game {
+        height: 60vmin;
+        width: 60vmin;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5vmin;
+        margin-left: 80px;
+      }
+
+      .box {
+        height: 18vmin;
+        width: 18vmin;
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 0 1rem rgba(0, 0, 0, 0.3);
+        font-size: 8vmin;
+        color: #b0413e;
+        background-color: #ffffc7;
+      }
+
+      .chat-m {
+        margin-left: 47px;
+        height: 60vh;
+        width: 60%;
+        background-color: #ffffc7;
+        border: 7px solid rgb(0, 0, 0);
+        border-radius: 9px;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+
+      .msg-btn {
+        margin-top: 10px;
+        margin-right: 150px;
+        padding: 5px 10px;
+        border: 1px solid black;
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: rgb(75, 171, 75);
+        font-weight: 600;
+        margin-bottom: 50px;
+      }
+
+      .tictactoe {
+        margin-right: 70px;
+        margin-bottom: 15px;
+        color: #b0413e;
+      }
+
+      .chat {
+        margin-top: 10px;
+        margin-right: 160px;
+        margin-bottom: 1px;
+        color: #b0413e;
+      }
+
+      #name,
+      #input {
+
+        font-size: 20px;
+        padding: 3px;
+        margin-top: 3px;
+        border: 1px solid black;
+        border-radius: 7px;
+        padding: 3px;
+        margin: 10px 160px 1px 0px;
+        width: 60%;
+      }
+
+      #reset-btn,
+      #new-btn {
+        padding: 2px;
+        margin-top: 15px;
+        margin-right: 40px;
+        padding: 5px 10px;
+        border: 2px solid black;
+        border-radius: 4px;
+        background-color: rgb(255, 255, 255);
+        cursor: pointer;
+      }
+      #new-btn {
+        margin-top: 7px;
+        margin-bottom: 14px;
+      }
+      .chat-message {
+        font-size: 10px;
+        text-align: left;
+        margin: 4px 0;
+        /* list-style-type: none; */
+        border: 1px solid grey;
+        border-radius: 2%;
+        background-color: #dcf8c6;
+        color: orangered;
+      }p{
+        color: black !important;
+      }
+      p,li{
+        
+        font-size: 17px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="chat-container">
+        <h2 class="chat">Chat</h2>
+        <div class="chat-m" id="chat-box">
+          <ul id="list" class="chat-message"></ul>
+        </div>
+        <form id="form">
+          <input id="name" placeholder="Name" />
+          <input id="input" placeholder="Message" />
+          <button type="submit" class="msg-btn">Send</button>
+        </form>
+      </div>
+      <div class="game-container">
+        <h2 class="tictactoe">Tic Tac Toe</h2>
+        <div class="game">
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+          <button class="box"></button>
+        </div>
+        <button id="reset-btn">Reset Game</button>
+        <div class="msg-container hide">
+          <button id="new-btn">New Game</button>
+          <p id="msg" style="margin-right: 40px;">Winner</p>
+        </div>
+      </div>
+    </div>
+
+0
+    
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      let boxes = document.querySelectorAll(".box");
+      let resetBtn = document.querySelector("#reset-btn");
+      let newGameBtn = document.querySelector("#new-btn");
+      let msgContainer = document.querySelector(".msg-container");
+      let msg = document.querySelector("#msg");
+
+      let turnO = true; //playerX, playerO
+      let count = 0; //To Track Draw
+
+      const winPatterns = [
+        [0, 1, 2],
+        [0, 3, 6],
+        [0, 4, 8],
+        [1, 4, 7],
+        [2, 5, 8],
+        [2, 4, 6],
+        [3, 4, 5],
+        [6, 7, 8],
+      ];
+
+      const resetGame = () => {
+        turnO = true;
+        count = 0;
+        enableBoxes();
+        msgContainer.classList.add("hide");
+      };
+
+      boxes.forEach((box) => {
+        box.addEventListener("click", () => {
+          if (turnO) {
+            //playerO
+            box.innerText = "O";
+            turnO = false;
+          } else {
+            //playerX
+            box.innerText = "X";
+            turnO = true;
+          }
+          box.disabled = true;
+          count++;
+
+          let isWinner = checkWinner();
+
+          if (count === 9 && !isWinner) {
+            gameDraw();
+          }
+        });
+      });
+
+      const gameDraw = () => {
+        msg.innerText = `Game was a Draw.`;
+        msgContainer.classList.remove("hide");
+        disableBoxes();
+      };
+
+      const disableBoxes = () => {
+        for (let box of boxes) {
+          box.disabled = true;
+        }
+      };
+
+      const enableBoxes = () => {
+        for (let box of boxes) {
+          box.disabled = false;
+          box.innerText = "";
+        }
+      };
+
+      const showWinner = (winner) => {
+        msg.innerText = `Congratulations, Winner is ${winner}`;
+        msgContainer.classList.remove("hide");
+        disableBoxes();
+      };
+
+      const checkWinner = () => {
+        for (let pattern of winPatterns) {
+          let pos1Val = boxes[pattern[0]].innerText;
+          let pos2Val = boxes[pattern[1]].innerText;
+          let pos3Val = boxes[pattern[2]].innerText;
+
+          if (pos1Val != "" && pos2Val != "" && pos3Val != "") {
+            if (pos1Val === pos2Val && pos2Val === pos3Val) {
+              showWinner(pos1Val);
+              return true;
+            }
+          }
+        }
+      };
+
+      newGameBtn.addEventListener("click", resetGame);
+      resetBtn.addEventListener("click", resetGame);
+
+      const socket = io();
+      const form = document.getElementById("form");
+      const name = document.getElementById("name");
+      const input = document.getElementById("input");
+      const list = document.getElementById("list");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit("name", name.value);
+          socket.emit("chat message", input.value);
+          input.value = " ";
+        }
+      });
+      socket.on("name", (user) => {
+        const item = document.createElement("p");
+        item.textContent = user;
+        list.appendChild(item);
+      });
+      socket.on("chat message", (msg) => {
+        const item = document.createElement("li");
+        item.textContent = msg;
+        list.appendChild(item);
+      });
+    </script>
+
+  </body>
+</html>y
