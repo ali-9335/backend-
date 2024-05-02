@@ -3,7 +3,7 @@
 const express = require('express');
 const path = require('path');
 const bcrypt = require("bcrypt");
-const collection = require("./src/config.js");
+const collection = require("./config.js");
 const socketIO = require('socket.io');
 
 const app = express();
@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
     console.log("A user has connected to the server");
 
     socket.on('name', (msg) => {
-        io.emit('name', msg);   
+        io.emit('name', msg);
     });
 
     socket.on('chat message', (msg) => {
